@@ -1105,3 +1105,24 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 		g_ril_append_print_buf(gril, "%s)", print_buf);
 	}
 }
+
+void g_ril_request_set_uicc_subscription(GRil *gril, int slot_id,
+                                         int app_index,
+                                         int sub_id,
+                                         int sub_status,
+                                         struct parcel *rilp)
+{
+    parcel_init(rilp);
+
+    parcel_w_int32(rilp, slot_id);
+    parcel_w_int32(rilp, app_index);
+    parcel_w_int32(rilp, sub_id);
+    parcel_w_int32(rilp, sub_status);
+
+    g_ril_append_print_buf(gril, "(%d, %d, %d, %d(%s))",
+                                  slot_id,
+                                  app_index,
+                                  sub_id,
+                                  sub_status,
+                                  sub_status ? "ACTIVATE" : "DEACTIVATE");
+}

@@ -276,6 +276,13 @@ void g_ril_request_set_initial_attach_apn(GRil *gril, const char *apn,
 						const char *mccmnc,
 						struct parcel *rilp);
 
+void g_ril_request_set_uicc_subscription(GRil *gril, int slot_id,
+                        int app_index,
+                        int sub_id,
+                        int sub_status,
+                        struct parcel *rilp);
+
+
 #ifdef __cplusplus
 }
 #endif
