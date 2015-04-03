@@ -72,7 +72,7 @@
  *
  * The same applies to the app_type.
  */
- 
+
 static void ril_pin_change_state(struct ofono_sim *sim,
 				enum ofono_sim_password_type passwd_type,
 				int enable, const char *passwd,
@@ -640,6 +640,60 @@ static void configure_active_app(struct sim_data *sd,
 	}
 }
 
+static void sim_send_set_uicc_subscription(struct ofono_sim *sim, int slot_id, int app_index, int sub_id, int sub_status)
+{
+    struct sim_data *sd = ofono_sim_get_data(sim);
+    struct parcel rilp;
+
+    DBG("");
+
+    g_ril_request_set_uicc_subscription(sd->ril, slot_id, app_index, sub_id, sub_status, &rilp);
+    g_ril_send(sd->ril, RIL_REQUEST_SET_UICC_SUBSCRIPTION, &rilp,
+               NULL, NULL, NULL);
+}
+
+static int sim_select_uicc_subscription(struct ofono_sim *sim, struct reply_sim_status *status)
+{
+    struct sim_data *sd = ofono_sim_get_data(sim);
+    int slot_id = ofono_modem_get_integer(sd->modem, "Slot");
+    int selected_app = -1;
+    unsigned int i;
+
+    for (i=0; i < status->num_apps; i++) {
+        switch (status->apps[i]->app_type) {
+        case RIL_APPTYPE_UNKNOWN:
+            continue;
+        case RIL_APPTYPE_USIM:
+        case RIL_APPTYPE_RUIM:
+            if (selected_app != -1) {
+                switch (status->apps[selected_app]->app_type) {
+                case RIL_APPTYPE_USIM:
+                case RIL_APPTYPE_RUIM:
+                    break;
+                default:
+                    selected_app = i;
+                }
+            }
+            else {
+                selected_app = i;
+            }
+            break;
+        default:
+            if (selected_app == -1) {
+                selected_app = i;
+            }
+        }
+    }
+
+    DBG("Select app %d for subscription.", selected_app);
+
+    if (selected_app != -1) {
+        sim_send_set_uicc_subscription(sim, slot_id, selected_app, slot_id, 1); //1 == ACTIVATE
+    }
+
+    return selected_app;
+}
+
 static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_sim *sim = user_data;
@@ -663,39 +717,50 @@ static void sim_status_cb(struct ril_msg *message, gpointer user_data)
 		ofono_error("%s: bad SIM state (%u)",
 				__func__, status->card_state);
 
-	/* TODO(CDMA): need some kind of logic to set the correct app_index */
-	search_index = status->gsm_umts_index;
+	if (status->card_state == RIL_CARDSTATE_PRESENT) {
+        /* TODO(CDMA): need some kind of logic to set the correct app_index */
+        search_index = status->gsm_umts_index;
+        if (search_index > status->num_apps) {
+           /*
+            * On QCOM's multi SIM device, all index will be -1
+            * (but will wrap up to UINT_MAX because index is uint)
+            * until we send RIL_REQUEST_SET_UICC_SUBSCRIPTION.
+            * So, we need to figure out which app to use
+            * and send that request out.
+            */
+            search_index = sim_select_uicc_subscription(sim, status);
+        }
 
-	/*
-	 * We cache the current password state. Ideally this should be done by
-	 * issuing a GET_SIM_STATUS request from ril_query_passwd_state, which
-	 * is called by the core after sending a password, but unfortunately the
-	 * response to GET_SIM_STATUS is not reliable in mako when sent just
-	 * after sending the password. Some time is needed before the modem
-	 * refreshes its internal state, and when it does it sends a
-	 * SIM_STATUS_CHANGED event. In that moment we retrieve the status and
-	 * this function is executed. We call __ofono_sim_recheck_pin as it is
-	 * the only way to indicate the core to call query_passwd_state again.
-	 * An option that can be explored in the future is wait before invoking
-	 * core callback for send_passwd until we know the real password state.
-	 */
-	if (status->card_state == RIL_CARDSTATE_PRESENT
-			&& search_index < status->num_apps) {
-		struct reply_sim_app *app = status->apps[search_index];
+        if (search_index < status->num_apps) {
+            struct reply_sim_app *app = status->apps[search_index];
 
-		if (app->app_type != RIL_APPTYPE_UNKNOWN) {
-			configure_active_app(sd, app, search_index);
-			DBG("passwd_state: %d", sd->passwd_state);
+            if (app->app_type != RIL_APPTYPE_UNKNOWN) {
+                /*
+                 * We cache the current password state. Ideally this should be done by
+                 * issuing a GET_SIM_STATUS request from ril_query_passwd_state, which
+                 * is called by the core after sending a password, but unfortunately the
+                 * response to GET_SIM_STATUS is not reliable in mako when sent just
+                 * after sending the password. Some time is needed before the modem
+                 * refreshes its internal state, and when it does it sends a
+                 * SIM_STATUS_CHANGED event. In that moment we retrieve the status and
+                 * this function is executed. We call __ofono_sim_recheck_pin as it is
+                 * the only way to indicate the core to call query_passwd_state again.
+                 * An option that can be explored in the future is wait before invoking
+                 * core callback for send_passwd until we know the real password state.
+                 */
+                configure_active_app(sd, app, search_index);
+                DBG("passwd_state: %d", sd->passwd_state);
 
-			/*
-			 * Note: There doesn't seem to be any other way to force
-			 * the core SIM code to recheck the PIN. This call
-			 * causes the core to call the this atom's
-			 * query_passwd() function.
-			 */
-			__ofono_sim_recheck_pin(sim);
-		}
-	}
+                /*
+                 * Note: There doesn't seem to be any other way to force
+                 * the core SIM code to recheck the PIN. This call
+                 * causes the core to call the this atom's
+                 * query_passwd() function.
+                 */
+                __ofono_sim_recheck_pin(sim);
+            }
+        }
+    }
 
 	g_ril_reply_free_sim_status(status);
 }
