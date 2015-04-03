@@ -71,7 +71,7 @@
 #define RILD_CONNECT_RETRY_TIME_S 5
 
 const char *RILD_CMD_SOCKET[] = {"/dev/socket/rild", "/dev/socket/rild1"};
-const char *GRIL_DEBUG_HEX_PREFIX[] = {"Slot 0: ", "Slot 1: "};
+char *GRIL_DEBUG_HEX_PREFIX[] = {"Slot 0: ", "Slot 1: "};
 
 struct ril_data {
 	GRil *ril;
