@@ -340,6 +340,7 @@ static int create_gril(struct ofono_modem *modem)
 	struct ril_data *rd = ofono_modem_get_data(modem);
 	int slot_id = ofono_modem_get_integer(modem, "Slot");
 
+	ofono_info("Using %s as socket for slot %d.", RILD_CMD_SOCKET[slot_id], slot_id);
 	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], OFONO_RIL_VENDOR_AOSP);
 
 	/* NOTE: Since AT modems open a tty, and then call
