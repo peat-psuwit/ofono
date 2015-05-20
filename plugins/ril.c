@@ -70,8 +70,8 @@
 #define RILD_MAX_CONNECT_RETRIES 5
 #define RILD_CONNECT_RETRY_TIME_S 5
 
-const char* RILD_CMD_SOCKET[2]={"/dev/socket/rild", "/dev/socket/rild1"};
-const char* GRIL_HEX_PREFIX[2]={"Device 0: ", "Device 1: "};
+char* RILD_CMD_SOCKET[2]={"/dev/socket/rild", "/dev/socket/rild1"};
+char* GRIL_HEX_PREFIX[2]={"Device 0: ", "Device 1: "};
 
 struct ril_data {
 	GRil *ril;
