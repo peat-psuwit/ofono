@@ -34,6 +34,88 @@
 #include "drivers/rilmodem/vendor.h"
 #include "ril.h"
 
+#include <grilreply.h>
+#include <grilrequest.h>
+#include <grilunsol.h>
+
+#define MAX_SIM_STATUS_RETRIES 15
+
+/* this gives 30s for rild to initialize */
+#define RILD_MAX_CONNECT_RETRIES 5
+#define RILD_CONNECT_RETRY_TIME_S 5
+
+char* RILD_CMD_SOCKET[2]={"/dev/socket/rild", "/dev/socket/rild1"};
+char* GRIL_HEX_PREFIX[2]={"Device 0: ", "Device 1: "};
+
+static int qcom_msim_create_gril(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
+	int slot_id = ofono_modem_get_integer(modem, "Slot");
+
+	ofono_info("Using %s as socket for slot %d.", RILD_CMD_SOCKET[slot_id], slot_id);
+	rd->ril = g_ril_new(RILD_CMD_SOCKET[slot_id], OFONO_RIL_VENDOR_AOSP);
+
+	/* NOTE: Since AT modems open a tty, and then call
+	 * g_at_chat_new(), they're able to return -EIO if
+	 * the first fails, and -ENOMEM if the second fails.
+	 * in our case, we already return -EIO if the ril_new
+	 * fails.  If this is important, we can create a ril_socket
+	 * abstraction... ( probaby not a bad idea ).
+	 */
+
+	if (rd->ril == NULL) {
+		ofono_error("g_ril_new() failed to create modem!");
+		return -EIO;
+	}
+	g_ril_set_slot(rd->ril, slot_id);
+
+	if (getenv("OFONO_RIL_TRACE"))
+		g_ril_set_trace(rd->ril, TRUE);
+
+	if (getenv("OFONO_RIL_HEX_TRACE"))
+		g_ril_set_debugf(rd->ril, ril_debug, GRIL_HEX_PREFIX[slot_id]);
+
+	g_ril_register(rd->ril, RIL_UNSOL_RIL_CONNECTED,
+			ril_connected, modem);
+
+	g_ril_register(rd->ril, RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED,
+			ril_radio_state_changed, modem);
+
+	return 0;
+}
+
+static gboolean qcom_msim_reconnect_rild(gpointer user_data)
+{
+	struct ofono_modem *modem = (struct ofono_modem *) user_data;
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	ofono_info("Trying to reconnect to rild...");
+
+	if (rd->rild_connect_retries++ < RILD_MAX_CONNECT_RETRIES) {
+		if (create_gril(modem) < 0)
+			return TRUE;
+	} else {
+		ofono_error("Exiting, can't connect to rild.");
+		exit(0);
+	}
+
+	return FALSE;
+}
+
+int qcom_msim_enable(struct ofono_modem *modem)
+{
+	int ret;
+
+	DBG("");
+
+	ret = qcom_msim_create_gril(modem);
+	if (ret < 0)
+		g_timeout_add_seconds(RILD_CONNECT_RETRY_TIME_S,
+					qcom_msim_reconnect_rild, modem);
+
+	return -EINPROGRESS;
+}
+
 static int qcom_msim_probe(struct ofono_modem *modem)
 {
 	return ril_create(modem, OFONO_RIL_VENDOR_QCOM_MSIM);
@@ -43,7 +125,7 @@ static struct ofono_modem_driver qcom_msim_driver = {
 	.name = "qcom_msim",
 	.probe = qcom_msim_probe,
 	.remove = ril_remove,
-	.enable = ril_enable,
+	.enable = qcom_msim_enable,
 	.disable = ril_disable,
 	.pre_sim = ril_pre_sim,
 	.post_sim = ril_post_sim,
