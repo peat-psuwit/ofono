@@ -19,6 +19,18 @@
  *
  */
 
+struct ril_data {
+	struct _GRil *ril;
+	enum ofono_ril_vendor vendor;
+	int sim_status_retries;
+	ofono_bool_t connected;
+	ofono_bool_t ofono_online;
+	int radio_state;
+	struct ofono_sim *sim;
+	struct ofono_radio_settings *radio_settings;
+	int rild_connect_retries;
+};
+
 int ril_create(struct ofono_modem *modem, enum ofono_ril_vendor vendor);
 void ril_remove(struct ofono_modem *modem);
 int ril_enable(struct ofono_modem *modem);
