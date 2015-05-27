@@ -72,6 +72,18 @@
 
 #define RILD_CMD_SOCKET "/dev/socket/rild"
 
+struct ril_data {
+	GRil *ril;
+	enum ofono_ril_vendor vendor;
+	int sim_status_retries;
+	ofono_bool_t connected;
+	ofono_bool_t ofono_online;
+	int radio_state;
+	struct ofono_sim *sim;
+	struct ofono_radio_settings *radio_settings;
+	int rild_connect_retries;
+};
+
 static void ril_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;

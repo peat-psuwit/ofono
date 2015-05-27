@@ -30,15 +30,17 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
+#include <ofono/radio-settings.h>
 
 #include "ofono.h"
-
-#include "drivers/rilmodem/vendor.h"
-#include "ril.h"
 
 #include <grilreply.h>
 #include <grilrequest.h>
 #include <grilunsol.h>
+
+#include "drivers/rilmodem/vendor.h"
+#include "drivers/rilmodem/rilmodem.h"
+#include "ril.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
 
@@ -48,6 +50,19 @@
 
 char* RILD_CMD_SOCKET[2]={"/dev/socket/rild", "/dev/socket/rild1"};
 char* GRIL_HEX_PREFIX[2]={"Device 0: ", "Device 1: "};
+
+//Keep in sync with ril.c
+struct ril_data {
+	GRil *ril;
+	enum ofono_ril_vendor vendor;
+	int sim_status_retries;
+	ofono_bool_t connected;
+	ofono_bool_t ofono_online;
+	int radio_state;
+	struct ofono_sim *sim;
+	struct ofono_radio_settings *radio_settings;
+	int rild_connect_retries;
+};
 
 static void qcom_msim_debug(const char *str, void *user_data)
 {
