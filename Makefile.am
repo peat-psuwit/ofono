@@ -171,7 +171,7 @@ builtin_sources += drivers/rilmodem/rilmodem.h \
 
 builtin_modules += qcommsimmodem
 builtin_sources += drivers/qcommsimmodem/qcom_msim_modem.c \
-			drivers/qcommsimmodem/radio_settings.c
+			drivers/qcommsimmodem/radio-settings.c
 endif
 
 if ISIMODEM
