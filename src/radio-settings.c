@@ -338,7 +338,7 @@ static void radio_band_set_callback(const struct ofono_error *error,
 	radio_set_band(rs);
 }
 
-static void radio_set_rat_mode(struct ofono_radio_settings *rs,
+void radio_set_rat_mode(struct ofono_radio_settings *rs,
 				enum ofono_radio_access_mode mode)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
