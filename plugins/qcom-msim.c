@@ -40,6 +40,7 @@
 
 #include "drivers/rilmodem/vendor.h"
 #include "drivers/rilmodem/rilmodem.h"
+#include "drivers/qcommsimmodem/qcom_msim_modem.h"
 #include "ril.h"
 
 #define MAX_SIM_STATUS_RETRIES 15
@@ -95,7 +96,7 @@ static void qcom_msim_radio_state_changed(struct ril_msg *message, gpointer user
 							{ rd->ril, modem };
 				rd->radio_settings =
 					ofono_radio_settings_create(modem,
-						rd->vendor, RILMODEM, &rs_data);
+						rd->vendor, QCOMMSIMMODEM, &rs_data);
 			}
 
 			break;
