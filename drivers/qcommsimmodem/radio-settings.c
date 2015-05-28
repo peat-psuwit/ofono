@@ -212,7 +212,7 @@ static ofono_bool_t query_modem_rats_cb(gpointer user_data)
 	struct cb_data *cbd = user_data;
 	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
 	struct ofono_radio_settings *rs = cbd->user;
-	struct qcom_msim_radio_data *rd = ofono_radio_settings_get_data(rs);
+	//struct qcom_msim_radio_data *rd = ofono_radio_settings_get_data(rs);
 
 	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
 	modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
@@ -265,7 +265,7 @@ static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
 	return 0;
 }
 
-void qcom_msim_radio_settings_remove(struct ofono_radio_settings *rs)
+static void qcom_msim_radio_settings_remove(struct ofono_radio_settings *rs)
 {
 	struct qcom_msim_radio_data *rd = ofono_radio_settings_get_data(rs);
 	int slot_id = ofono_modem_get_integer(rd->modem, "Slot");
