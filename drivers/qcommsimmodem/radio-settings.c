@@ -212,16 +212,13 @@ static ofono_bool_t query_modem_rats_cb(gpointer user_data)
 	struct cb_data *cbd = user_data;
 	ofono_radio_settings_modem_rats_query_cb_t cb = cbd->cb;
 	struct ofono_radio_settings *rs = cbd->user;
-	//struct qcom_msim_radio_data *rd = ofono_radio_settings_get_data(rs);
+	struct qcom_msim_radio_data *rd = ofono_radio_settings_get_data(rs);
 
 	modem_rats[OFONO_RADIO_ACCESS_MODE_GSM] = TRUE;
 	modem_rats[OFONO_RADIO_ACCESS_MODE_UMTS] = TRUE;
 
-        /* I don't have multi-sim device with LTE, so I don't know what I
-         * should do. Just hide it for now.
-         */
-	/* if (ofono_modem_get_boolean(rd->modem, MODEM_PROP_LTE_CAPABLE))
-		modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE; */
+	if (ofono_modem_get_boolean(rd->modem, MODEM_PROP_LTE_CAPABLE))
+		modem_rats[OFONO_RADIO_ACCESS_MODE_LTE] = TRUE;
 
 	CALLBACK_WITH_SUCCESS(cb, modem_rats, cbd->data);
 
@@ -282,7 +279,7 @@ static void qcom_msim_radio_settings_remove(struct ofono_radio_settings *rs)
 static struct ofono_radio_settings_driver driver = {
 	.name			= QCOMMSIMMODEM,
 	.probe			= qcom_msim_radio_settings_probe,
-	.remove			= ril_radio_settings_remove,
+	.remove			= qcom_msim_radio_settings_remove,
 	.query_rat_mode		= ril_query_rat_mode,
 	.set_rat_mode		= qcom_msim_set_rat_mode,
 	.query_fast_dormancy	= ril_query_fast_dormancy,
