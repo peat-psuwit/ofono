@@ -162,18 +162,7 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 		break;
 	}
 
-        if (multisim_rs_amount == 1) {
-                g_ril_request_set_preferred_network_type(rd->ril, pref, &rilp);
-
-                if (g_ril_send(rd->ril, RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
-                                        &rilp, qcom_msim_set_rat_cb, cbd,
-                                        g_free) == 0) {
-                        ofono_error("%s: unable to set rat mode", __func__);
-                        g_free(cbd);
-                        CALLBACK_WITH_FAILURE(cb, data);
-                }
-        }
-	else if (pref == PREF_NET_TYPE_GSM_WCDMA) {
+	if (pref == PREF_NET_TYPE_GSM_WCDMA && multisim_rs_amount > 1) {
                 int i;
                 for (i = 0; i < MULTISIM_RS_LAST; i++) {
                         if (multisim_rs[i] == rs) {
@@ -204,6 +193,17 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
                         }
                 }
 	}
+	else {
+                g_ril_request_set_preferred_network_type(rd->ril, pref, &rilp);
+
+                if (g_ril_send(rd->ril, RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
+                                        &rilp, qcom_msim_set_rat_cb, cbd,
+                                        g_free) == 0) {
+                        ofono_error("%s: unable to set rat mode", __func__);
+                        g_free(cbd);
+                        CALLBACK_WITH_FAILURE(cb, data);
+                }
+        }
 }
 
 static ofono_bool_t query_modem_rats_cb(gpointer user_data)
