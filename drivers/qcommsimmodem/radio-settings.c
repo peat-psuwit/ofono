@@ -82,7 +82,9 @@ static void qcom_msim_set_2g_rat_cb(struct ril_msg *message,
 	struct set_2g_rat *set_2g_rat_data = user_data;
 	struct ofono_radio_settings *rs = set_2g_rat_data->rs;
 	struct pending_pref_setting *pps = set_2g_rat_data->pps;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_rat_mode_set_cb_t cb;
+	struct parcel rilp;
 
 	pps->pending_gsm_pref_remaining -= 1;
 
