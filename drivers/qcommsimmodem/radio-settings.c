@@ -109,7 +109,7 @@ static void qcom_msim_set_2g_rat_cb(struct ril_msg *message,
 			g_ril_request_set_preferred_network_type(pps_rd->ril,
 							pps->pref, &rilp);
 
-			if (g_ril_send(rd->ril,
+			if (g_ril_send(pps_rd->ril,
 					RIL_REQUEST_SET_PREFERRED_NETWORK_TYPE,
 					&rilp, qcom_msim_set_rat_cb, pps->cbd,
 					g_free) == 0) {
