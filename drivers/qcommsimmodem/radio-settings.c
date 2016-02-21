@@ -42,6 +42,7 @@
 
 #include "drivers/rilmodem/radio-settings.h"
 #include "drivers/rilmodem/rilutil.h"
+#include "plugins/ril.h"
 #include "qcom_msim_modem.h"
 #include "qcom_msim_constants.h"
 
@@ -136,6 +137,7 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 	struct cb_data *cbd = cb_data_new(cb, data, rs);
 	struct parcel rilp;
 	int pref = PREF_NET_TYPE_GSM_WCDMA;
+	struct qcom_msim_pending_pref_setting *pps = NULL;
 
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
@@ -152,16 +154,8 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 		break;
 	}
 
-	if (pref != PREF_NET_TYPE_GSM_ONLY && multisim_num_slots > 1) {
-		struct qcom_msim_pending_pref_setting *pps =
-			g_try_new0(struct qcom_msim_pending_pref_setting, 1);
+	if (pref != PREF_NET_TYPE_GSM_ONLY) {
 		int i;
-
-		pps->rs = rs;
-		pps->pref = pref;
-		pps->cbd = cbd;
-		pps->pending_gsm_pref_remaining = 0;
-
 		for (i = 0; i < QCOMMSIM_NUM_SLOTS_MAX; i++) {
 			struct radio_data *temp_rd;
 			struct qcom_msim_set_2g_rat *set_2g_rat_data;
@@ -170,6 +164,21 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 				continue;
 
 			temp_rd = ofono_radio_settings_get_data(multisim_rs[i]);
+
+			if (ril_sim_get_state(temp_rd->modem) ==
+						OFONO_SIM_STATE_NOT_PRESENT)
+				continue;
+
+			if (pps == NULL) {
+				pps = g_try_new0(
+					struct qcom_msim_pending_pref_setting,
+									1);
+				pps->rs = rs;
+				pps->pref = pref;
+				pps->cbd = cbd;
+				pps->pending_gsm_pref_remaining = 0;
+			}
+
 			set_2g_rat_data =
 				g_try_new0(struct qcom_msim_set_2g_rat, 1);
 			set_2g_rat_data->pps = pps;
@@ -193,12 +202,15 @@ static void qcom_msim_set_rat_mode(struct ofono_radio_settings *rs,
 				pps->pending_gsm_pref_remaining += 1;
 			}
 		}
-
-		if (pps->pending_gsm_pref_remaining == 0)
-			g_free(pps);
-	} else {
-		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 	}
+
+	if (pps && pps->pending_gsm_pref_remaining == 0) {
+		g_free(pps);
+		pps = NULL;
+	}
+
+	if (pps == NULL)
+		qcom_msim_do_set_rat_mode(rs, pref, cbd);
 }
 
 static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
