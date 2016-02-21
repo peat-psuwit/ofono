@@ -28,3 +28,5 @@ void ril_post_sim(struct ofono_modem *modem);
 void ril_post_online(struct ofono_modem *modem);
 void ril_set_online(struct ofono_modem *modem, ofono_bool_t online,
 			ofono_modem_online_cb_t callback, void *data);
+
+enum ofono_sim_state ril_sim_get_state(struct ofono_modem *modem);

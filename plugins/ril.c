@@ -95,6 +95,21 @@ static void ril_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
+/*
+ * ril_sim_get_state is called by qcommsimmodem's radio settings driver. It is
+ * used to resolve problem with 3G slot selection. Normally, to set a slot as 3G
+ * when there are 2 SIMs in the device, radio settings must set other slot to
+ * 2G first. But if the other slot is empty, this action will fail. So, radio
+ * settings must know if the slot is empty, and skip setting this slot to 2G.
+ */
+
+enum ofono_sim_state ril_sim_get_state(struct ofono_modem *modem)
+{
+	struct ril_data *rd = ofono_modem_get_data(modem);
+
+	return ofono_sim_get_state(rd->sim);
+}
+
 static void ril_radio_state_changed(struct ril_msg *message, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
