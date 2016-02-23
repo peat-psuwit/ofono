@@ -59,7 +59,6 @@ struct qcom_msim_set_2g_rat {
 };
 
 static struct ofono_radio_settings *multisim_rs[QCOMMSIM_NUM_SLOTS_MAX];
-static int multisim_num_slots;
 
 static void qcom_msim_set_rat_cb(struct ril_msg *message, gpointer user_data)
 {
@@ -234,7 +233,6 @@ static int qcom_msim_radio_settings_probe(struct ofono_radio_settings *rs,
 
 	slot_id = ofono_modem_get_integer(rsd->modem, "Slot");
 	multisim_rs[slot_id] = rs;
-	multisim_num_slots += 1;
 
 	return 0;
 }
@@ -245,7 +243,6 @@ static void qcom_msim_radio_settings_remove(struct ofono_radio_settings *rs)
 	int slot_id = ofono_modem_get_integer(rd->modem, "Slot");
 
 	multisim_rs[slot_id] = NULL;
-	multisim_num_slots -= 1;
 
 	ofono_radio_settings_set_data(rs, NULL);
 
